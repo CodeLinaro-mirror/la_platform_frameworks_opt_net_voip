@@ -16,11 +16,12 @@
 
 package android.net.rtp;
 
+import static android.media.permission.PermissionUtil.myIdentity;
+
 import android.annotation.NonNull;
-import android.content.AttributionSource;
 import android.content.Context;
 import android.media.AudioManager;
-import android.os.Parcel;
+import android.media.permission.Identity;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -169,14 +170,10 @@ public class AudioGroup {
                 String codecSpec = String.format(Locale.US, "%d %s %s", codec.type,
                         codec.rtpmap, codec.fmtp);
 
-                final long id;
-                try (AttributionSource.ScopedParcelState attributionSourceState = mContext
-                        .getAttributionSource().asScopedParcelState()) {
-                    id = nativeAdd(stream.getMode(), stream.getSocket(),
-                            stream.getRemoteAddress().getHostAddress(),
-                            stream.getRemotePort(), codecSpec, stream.getDtmfType(),
-                            attributionSourceState.getParcel());
-                }
+                long id = nativeAdd(stream.getMode(), stream.getSocket(),
+                        stream.getRemoteAddress().getHostAddress(),
+                        stream.getRemotePort(), codecSpec, stream.getDtmfType(),
+                        myIdentity(mContext));
                 mStreams.put(stream, id);
             } catch (NullPointerException e) {
                 throw new IllegalStateException(e);
@@ -184,8 +181,8 @@ public class AudioGroup {
         }
     }
 
-    private native long nativeAdd(int mode, int socket, String remoteAddress, int remotePort,
-            String codecSpec, int dtmfType, Parcel attributionSource);
+    private native long nativeAdd(int mode, int socket, String remoteAddress,
+            int remotePort, String codecSpec, int dtmfType, Identity identity);
 
     // Package-private method used by AudioStream.join().
     synchronized void remove(AudioStream stream) {
